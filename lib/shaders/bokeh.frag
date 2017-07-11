@@ -19,7 +19,7 @@ float readDepth (vec2 coord) {
 
 void main() {
 vec2 aspectcorrect = vec2( 1.0, aspect );
-vec4 depth1 = texture2D( tDepth, vUv );
+vec4 depth1 = vec4(vec3(readDepth(vUv)), 1.0);
 float factor = depth1.x - focus;
 vec2 dofblur = vec2 ( clamp( factor * aperture, -maxblur, maxblur ) );
 vec2 dofblur9 = dofblur * 0.9;
@@ -68,6 +68,7 @@ col += texture2D( tColor, vUv.xy + ( vec2( -0.4,   0.0  ) * aspectcorrect ) * do
 col += texture2D( tColor, vUv.xy + ( vec2( -0.29, -0.29 ) * aspectcorrect ) * dofblur4 );
 col += texture2D( tColor, vUv.xy + ( vec2(  0.0,   0.4  ) * aspectcorrect ) * dofblur4 );
 gl_FragColor = col / 41.0;
+// gl_FragColor = depth1;
 
 // gl_FragColor = vec4(vec3(readDepth(vUv)), 1.0);
 gl_FragColor.a = 1.0;

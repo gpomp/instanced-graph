@@ -1,9 +1,25 @@
 #pragma glslify: snoise2 = require(glsl-noise/classic/2d)
 #define M_PI 3.1415926535897932384626433832795
 
-uniform mat4 modelViewMatrix;
-uniform mat4 projectionMatrix;
-uniform mat4 modelMatrix;
+varying vec3 vViewPosition;
+
+#ifndef FLAT_SHADED
+
+  varying vec3 vNormal;
+
+#endif
+
+#include <common>
+#include <uv_pars_vertex>
+#include <uv2_pars_vertex>
+#include <displacementmap_pars_vertex>
+#include <envmap_pars_vertex>
+#include <color_pars_vertex>
+#include <morphtarget_pars_vertex>
+#include <skinning_pars_vertex>
+#include <shadowmap_pars_vertex>
+#include <logdepthbuf_pars_vertex>
+#include <clipping_planes_pars_vertex>
 
 uniform float time;
 uniform float timeFast;
@@ -16,13 +32,11 @@ uniform float uScale;
 uniform float amplitude;
 uniform float textureWidth;
 
-attribute vec3 position;
 attribute vec3 offset;
 attribute float indexInst;
 
 varying float vPerc;
 varying float vGraphPos;
-varying vec3 vPos;
 varying float vTime;
 
 mat4 rotationMatrix(vec3 axis, float angle)
@@ -38,7 +52,16 @@ mat4 rotationMatrix(vec3 axis, float angle)
               0.0,                                0.0,                                0.0,                                1.0);
 }
 
-void main(){
+void main() {
+
+  #include <uv_vertex>
+  #include <uv2_vertex>
+  #include <color_vertex>
+
+  #include <skinbase_vertex>
+  #include <skinnormal_vertex>
+  #include <begin_vertex>
+
   float percTex = textureWidth;
   float perc = indexInst / total;
   vPerc = perc;
@@ -66,13 +89,24 @@ void main(){
 
   vec4 orientation = rotationMatrix(vec3(1.0, 0, 0), angle)[2].xyzw;
   vec3 vcV = cross(orientation.xyz, position);
-  vec3 pos = position * vcV * (2.0 * orientation.w) + (cross(orientation.xyz, vcV) * 2.0 + position) * scale;
-  pos = pos + vec3(-radius / 2.0 + cos(timeFast + (offset.x * 2.0 - 1.0) * 4.0) * offset.z * radius * noise, posY, z);
+  transformed = position * vcV * (2.0 * orientation.w) + (cross(orientation.xyz, vcV) * 2.0 + position) * scale;
+  transformed = transformed + vec3(-radius / 2.0 + cos(timeFast + (offset.x * 2.0 - 1.0) * 4.0) * offset.z * radius * noise, posY, z);
   // pos = pos
 
-  vec4 sPos = modelViewMatrix * vec4(pos,1.0);
-  vPos =  sPos.xyz;
+  vec4 sPos = modelViewMatrix * vec4(transformed,1.0);
 
-  gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );
+  #include <displacementmap_vertex>
+  #include <morphtarget_vertex>
+
+  #include <skinning_vertex>
+  #include <project_vertex>
+  #include <logdepthbuf_vertex>
+  #include <clipping_planes_vertex>
+
+  vViewPosition = -mvPosition.xyz;
+
+  #include <worldpos_vertex>
+  #include <envmap_vertex>
+  #include <shadowmap_vertex>
 
 }
