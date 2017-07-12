@@ -32,11 +32,12 @@ uniform float opacity;
 varying float vPerc;
 varying float vGraphPos;
 varying float vTime;
+varying float vReveal;
 
 void main() {
   #include <clipping_planes_fragment>
 
-  vec4 diffuseColor = vec4( vGraphPos, (vTime + vPerc) * 0.5, 1.0 - vGraphPos, opacity );
+  vec4 diffuseColor = vec4( mix(vec3(1.0), vec3(vGraphPos, (vTime + vPerc) * 0.5, 1.0 - vGraphPos), vReveal), opacity );
   ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
   vec3 totalEmissiveRadiance = emissive;
 

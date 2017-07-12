@@ -25,7 +25,9 @@ uniform float time;
 uniform float timeFast;
 uniform float total;
 uniform sampler2D graphSource;
+uniform sampler2D noiseTexture;
 
+uniform float fade;
 uniform float rad;
 uniform float length;
 uniform float uScale;
@@ -38,6 +40,7 @@ attribute float indexInst;
 varying float vPerc;
 varying float vGraphPos;
 varying float vTime;
+varying float vReveal;
 
 mat4 rotationMatrix(vec3 axis, float angle)
 {
@@ -66,8 +69,10 @@ void main() {
   float perc = indexInst / total;
   vPerc = perc;
   vTime = mod(time * clamp(offset.x, 0.1, 1.0) + perc, 1.0);
+  vReveal = clamp(smoothstep(max(0.0, vTime - 0.2), vTime, fade), 0.0, 1.0);
   float timeFastMod = mod(timeFast, 1.0);
   float timeReg = (vTime * 2.0 - 1.0);
+  vec3 noiseImage = texture2D(noiseTexture, vec2(vTime, offset.x * perc)).rgb;
   float z = timeReg * length;
   float curr = floor((vTime + 1.0 / percTex) * percTex) / percTex;
   float prev = floor(vTime * percTex) / percTex;
@@ -89,10 +94,12 @@ void main() {
 
   vec4 orientation = rotationMatrix(vec3(1.0, 0, 0), angle)[2].xyzw;
   vec3 vcV = cross(orientation.xyz, position);
-  transformed = position * vcV * (2.0 * orientation.w) + (cross(orientation.xyz, vcV) * 2.0 + position) * scale;
-  transformed = transformed + vec3(-radius / 2.0 + cos(timeFast + (offset.x * 2.0 - 1.0) * 4.0) * offset.z * radius * noise, posY, z);
+  transformed = position * vcV * (2.0 * orientation.w) + (cross(orientation.xyz, vcV) * 2.0 + position) * (scale + (1.0 - vReveal) * scale * 3.0);
+  float noiseLength = length * 3.0;
+  vec3 floating = vec3((noiseImage.r * 2.0 - 1.0) * noiseLength, noiseLength / 2.0 + (noiseImage.g * 2.0 - 1.0) * noiseLength, -(noiseImage.b * 2.0 - 1.0) * noiseLength);
+  vec3 destination = mix(floating, vec3(-radius / 2.0 + cos(timeFast + (offset.x * 2.0 - 1.0) * 4.0) * offset.z * radius * noise, posY, z), vReveal);
+  transformed = transformed + destination;
   // pos = pos
-
   vec4 sPos = modelViewMatrix * vec4(transformed,1.0);
 
   #include <displacementmap_vertex>
